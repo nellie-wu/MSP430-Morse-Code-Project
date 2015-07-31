@@ -1,0 +1,130 @@
+;*******************************************************************************
+;   MSP430: ECE 3140 Sample File 
+;*******************************************************************************
+            .cdecls C,LIST,"msp430x22x4.h"  ; Include device header file
+
+;-------------------------------------------------------------------------------
+            .text                           ; Progam Start 
+			.global _main
+;-------------------------------------------------------------------------------
+_main:
+RESET:      mov.w   #300h,SP                ; Initialize stackpointer
+		    mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
+		    bis.b   #0x01,&P1DIR            ; P1.0 output
+;-------------------------------------------------------------------------------
+; Don't change the setup above this line unless you know what you are doing!
+;-------------------------------------------------------------------------------
+
+;			Change the number here to test your code
+;           Since we only use R12 once, no need to save any caller saved register
+            mov.w #9, R12
+            call #Morse
+forever:	jmp forever						; wait here forever
+
+;              ---- YOUR ASSEMBLY GOES HERE ----
+Morse:		push.w R4    ;save all used callee saved registers into stack
+            push.w R5
+            push.w R6
+            push.w R7
+            push.w R8
+            push.w R9
+            push.w R10
+            mov.w #5,R11
+            cmp.w #0,R12
+            jeq caseZero
+            mov.w R12,R14
+            mov.w #5,R13
+            sub.w R13,R14
+            mov.w R14,R10  ;store R14's value in R10 for future use
+            cmp.w #0,R14
+            jge Dash
+
+Dot:		cmp.w #0,R11
+	        jeq Done
+	        add.w #5,R10
+	        jeq Dot
+;block for delay, delay for 100000
+repeato:	dec.w R11
+	        dec.w R10
+		    bis.b	#0x01,&P1OUT ;turn on LED
+	        mov.w #65535,R9
+ono:	    dec.w R9
+	        jnz ono
+	        mov.w #34465,R6
+delay2:	    dec.w R6
+	        jnz delay2
+	        cmp.w #0,R11
+			jeq Done
+		    mov.w #65535,R7
+	        bic.b #0x01,&P1OUT			; turn off LED
+;block for pause, pause for 100000
+pauseo:	    sub.w #1,R7
+			jge pauseo
+			mov.w #34465,R6
+delay3:	    dec.w R6
+	        jnz delay3
+			cmp.w #0,R10
+			jnz repeato
+
+
+Dash:		cmp.w #0,R11
+            jeq Done      ; Done with both
+            cmp.w #0,R14
+            jge positive
+            mov.w #0, R15
+            sub.w R14, R15
+            mov.w R15, R14
+positive:   cmp.w #0, R14
+            jeq Dot        ;Done with Dot only, jump to Dash
+;block for delay, delay for 300000
+repeata:	dec.w R14
+            dec.w R11
+            mov.w #4, R5
+newR9:      mov.w #65535,R9
+ona:		bis.b #0x01,&P1OUT  ; turn on LED
+			dec.w R9
+			jnz ona
+     		dec.w R5
+			jnz newR9
+			mov.w #37860,R15
+onaa:		bis.b #0x01,&P1OUT  ; turn on LED
+			dec.w R15
+			jnz onaa
+
+			cmp.w #0,R11
+			jeq Done
+     		mov.w #65535,R7
+	        bic.b #0x01,&P1OUT			; turn off LED
+;block for pause, pause for 100000
+pausea:     sub.w #1,R7
+            cmp.w #0,R7
+			jnz pausea
+	        mov.w #34465,R6
+delay1:	    dec.w R6
+	        jnz delay1
+	        cmp.w #0,R14
+			jnz repeata
+	        jeq Dot
+caseZero:	mov.w #5,R14
+	        mov.w #5,R11
+	        jmp repeata
+;-------------------------------------------------------------------------------
+; Instructions that turn the red LED on/off
+;-------------------------------------------------------------------------------
+Done:	    pop.w R4       ;restore all calee saved regiters
+            pop.w R5
+            pop.w R6
+            pop.w R7
+            pop.w R8
+            pop.w R9
+            pop.w R10
+            ret
+
+
+;-------------------------------------------------------------------------------
+;           Interrupt Vectors: don't change
+;-------------------------------------------------------------------------------
+            .sect   ".reset"                ; MSP430 RESET Vector
+            .short  RESET                   ;
+
+            .end
